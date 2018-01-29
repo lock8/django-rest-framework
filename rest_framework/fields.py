@@ -236,8 +236,9 @@ def get_error_detail(exc_info):
     """
     code = getattr(exc_info, 'code', None) or 'invalid'
     return [
-        ErrorDetail(msg, code=code)
-        for msg in exc_info.messages
+        ErrorDetail(error.message % (error.params or ()),
+                    code=error.code if error.code else code)
+        for error in exc_info.error_list
     ]
 
 

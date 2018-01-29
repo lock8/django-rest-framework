@@ -6,6 +6,7 @@ import uuid
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 
 import pytest
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.http import QueryDict
 from django.test import TestCase, override_settings
 from django.utils import six
@@ -2087,3 +2088,22 @@ class TestSerializerMethodField:
             "'ExampleSerializer', because it is the same as the default "
             "method name. Remove the `method_name` argument."
         )
+
+
+class TestValidationErrorCode:
+    @pytest.mark.parametrize('use_list', (False, True))
+    def test_validationerror_code(self, use_list):
+
+        class ExampleSerializer(serializers.Serializer):
+            password = serializers.CharField()
+
+            def validate_password(self, obj):
+                err = DjangoValidationError('exc_msg', code='exc_code')
+                if use_list:
+                    err = DjangoValidationError([err])
+                raise err
+
+        serializer = ExampleSerializer(data={'password': 123})
+        serializer.is_valid()
+        assert serializer.errors == {'password': ['exc_msg']}
+        assert serializer.errors['password'][0].code == 'exc_code'
